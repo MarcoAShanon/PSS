@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QApplication
 
 from integra.interface import JanelaIntegraBase, ConfiguracaoInterface
 from integra.browser import SeleniumSetup
-from integra.sei import LoginSei, TelaAviso, SelecaoUnidadeDireta, IniciaProcessos
+from integra.sei import LoginSei, TelaAviso, SelecaoUnidadeDireta, IniciaProcessos, NumeroProcesso
 from integra.sei.core.enums import StatusLogin
 
 # ===== CONSTANTES =====
@@ -64,25 +64,47 @@ def iniciar_sei(usuario: str, senha: str, log_callback=None):
 
     log("SEI iniciado com sucesso na unidade DEXTRA!", "success")
 
-    # 5. Ler planilha e criar processo
+    # 5. Ler planilha e processar cada pensionista
     log("Lendo planilha de dados...", "info")
     df = pd.read_excel(PLANILHA_DADOS)
-    interessada = df.iloc[0]["NOME_PENSIONISTA"]
-    log(f"Pensionista: {interessada}", "info")
+    total = len(df)
+    log(f"{total} pensionista(s) encontrada(s) na planilha", "info")
 
-    processo = IniciaProcessos(
-        navegador=driver,
-        especificacao="Cobrança retroativa PSS",
-        classificacao="RFB-251-COBRANÇA CRÉDITO TRIBUTÁRIO",
-        interessado=interessada,
-        tipo="Arrecadação: Cobrança",
-    )
+    for idx, row in df.iterrows():
+        # Pula se já tem processo SEI registrado
+        if pd.notna(row.get("pen_SEI")) and str(row["pen_SEI"]).strip():
+            log(f"[{idx + 1}/{total}] {row['NOME_PENSIONISTA']} já possui processo: {row['pen_SEI']}", "info")
+            continue
 
-    if processo.iniciar_processo():
-        log(f"Processo criado para {interessada}!", "success")
-    else:
-        log(f"Falha ao criar processo para {interessada}", "error")
+        interessada = row["NOME_PENSIONISTA"]
+        log(f"[{idx + 1}/{total}] Criando processo para: {interessada}", "info")
 
+        # Criar processo
+        processo = IniciaProcessos(
+            navegador=driver,
+            especificacao="Cobrança retroativa PSS",
+            classificacao="RFB-251-COBRANÇA CRÉDITO TRIBUTÁRIO",
+            interessado=interessada,
+            tipo="Arrecadação: Cobrança",
+        )
+
+        if not processo.iniciar_processo():
+            log(f"Falha ao criar processo para {interessada}", "error")
+            continue
+
+        # Capturar número do processo gerado
+        numero = NumeroProcesso(driver, callback_log=log)
+        numero_processo = numero.obter_numero_processo()
+
+        if numero_processo:
+            # Gravar na planilha
+            df.at[idx, "pen_SEI"] = numero_processo
+            df.to_excel(PLANILHA_DADOS, index=False)
+            log(f"Processo {numero_processo} gravado para {interessada}", "success")
+        else:
+            log(f"Processo criado mas não foi possível capturar o número", "warning")
+
+    log(f"Processamento concluído! {total} registros verificados.", "success")
     return driver
 
 
