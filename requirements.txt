@@ -1,0 +1,7 @@
+colorama==0.4.6
+ifaddr==0.2.0
+integra==0.0.5
+loguru==0.7.3
+pyzmq==27.1.0
+win32_setctime==1.2.0
+zeroconf==0.148.0
