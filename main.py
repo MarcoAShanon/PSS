@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QApplication
 
 from integra.interface import JanelaIntegraBase, ConfiguracaoInterface
 from integra.browser import SeleniumSetup
-from integra.sei import LoginSei, TelaAviso
+from integra.sei import LoginSei, TelaAviso, SelecaoUnidadeDireta
 from integra.sei.core.enums import StatusLogin
 
 
@@ -22,7 +22,7 @@ from integra.sei.core.enums import StatusLogin
 
 def iniciar_sei(usuario: str, senha: str, log_callback=None):
     """
-    Inicia o SEI: abre o Chrome, faz login e fecha a tela de aviso.
+    Inicia o SEI: abre o Chrome, faz login, fecha a tela de aviso e seleciona a unidade.
 
     Args:
         usuario: Usuário do SEI
@@ -52,7 +52,11 @@ def iniciar_sei(usuario: str, senha: str, log_callback=None):
     tela_aviso = TelaAviso(driver, callback_log=log)
     tela_aviso.fechar_tela_aviso_sei()
 
-    log("SEI iniciado com sucesso!", "success")
+    # 4. Selecionar unidade DEXTRA
+    selecao = SelecaoUnidadeDireta(driver, "MGI-SGP-DECIPEX-CGPAG-DEXTRA", callback_log=log)
+    selecao.selecionar_unidade()
+
+    log("SEI iniciado com sucesso na unidade DEXTRA!", "success")
     return driver
 
 
