@@ -9,13 +9,19 @@ Interface gráfica com:
 
 import sys
 import threading
+from pathlib import Path
 
+import pandas as pd
 from PyQt5.QtWidgets import QApplication
 
 from integra.interface import JanelaIntegraBase, ConfiguracaoInterface
 from integra.browser import SeleniumSetup
-from integra.sei import LoginSei, TelaAviso, SelecaoUnidadeDireta
+from integra.sei import LoginSei, TelaAviso, SelecaoUnidadeDireta, IniciaProcessos
 from integra.sei.core.enums import StatusLogin
+
+# ===== CONSTANTES =====
+
+PLANILHA_DADOS = Path(__file__).parent / "planilhas" / "dados.xlsx"
 
 
 # ===== AUTOMAÇÃO DO SEI =====
@@ -57,6 +63,26 @@ def iniciar_sei(usuario: str, senha: str, log_callback=None):
     selecao.selecionar_unidade_sei()
 
     log("SEI iniciado com sucesso na unidade DEXTRA!", "success")
+
+    # 5. Ler planilha e criar processo
+    log("Lendo planilha de dados...", "info")
+    df = pd.read_excel(PLANILHA_DADOS)
+    interessada = df.iloc[0]["NOME_PENSIONISTA"]
+    log(f"Pensionista: {interessada}", "info")
+
+    processo = IniciaProcessos(
+        navegador=driver,
+        especificacao="Cobrança retroativa PSS",
+        classificacao="RFB-251-COBRANÇA CRÉDITO TRIBUTÁRIO",
+        interessado=interessada,
+        tipo="Arrecadação: Cobrança",
+    )
+
+    if processo.iniciar_processo():
+        log(f"Processo criado para {interessada}!", "success")
+    else:
+        log(f"Falha ao criar processo para {interessada}", "error")
+
     return driver
 
 
