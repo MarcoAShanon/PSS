@@ -79,7 +79,7 @@ def iniciar_sei(usuario: str, senha: str, log_callback=None):
     marcador = TrocaMarcadorSei(
         navegador=driver,
         mensagem="Processo criado via automação PSS",
-        inserir="INTEGRA-Processo Criado",
+        inserir="INTEGRA - Processo Criado",
         retornar_controle_processos=True,
         callback_log=log,
     )
