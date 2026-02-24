@@ -16,7 +16,10 @@ from PyQt5.QtWidgets import QApplication
 
 from integra.interface import JanelaIntegraBase, ConfiguracaoInterface
 from integra.browser import SeleniumSetup
-from integra.sei import LoginSei, TelaAviso, SelecaoUnidadeDireta, IniciaProcessos, NumeroProcesso
+from integra.sei import (
+    LoginSei, TelaAviso, SelecaoUnidadeDireta,
+    IniciaProcessos, NumeroProcesso, TrocaMarcadorSei,
+)
 from integra.sei.core.enums import StatusLogin
 
 # ===== CONSTANTES =====
@@ -103,6 +106,20 @@ def iniciar_sei(usuario: str, senha: str, log_callback=None):
             log(f"Processo {numero_processo} gravado para {interessada}", "success")
         else:
             log(f"Processo criado mas não foi possível capturar o número", "warning")
+
+        # Inserir marcador no processo
+        marcador = TrocaMarcadorSei(
+            navegador=driver,
+            mensagem="Processo criado via automação PSS",
+            inserir="INTEGRA-Processo Criado",
+            retornar_controle_processos=True,
+            callback_log=log,
+        )
+
+        if marcador.trocar_marcador():
+            log(f"Marcador 'INTEGRA-Processo Criado' inserido", "success")
+        else:
+            log(f"Falha ao inserir marcador no processo", "warning")
 
     log(f"Processamento concluído! {total} registros verificados.", "success")
     return driver
