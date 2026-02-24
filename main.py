@@ -86,7 +86,7 @@ def iniciar_sei(usuario: str, senha: str, log_callback=None):
         processo = IniciaProcessos(
             navegador=driver,
             especificacao="Cobrança retroativa PSS",
-            classificacao="RFB-251-COBRANÇA CRÉDITO TRIBUTÁRIO",
+            classificacao="RFB - 251 - COBRANÇA CRÉDITO TRIBUTÁRIO",
             interessado=interessada,
             tipo="Arrecadação: Cobrança",
         )
