@@ -69,7 +69,7 @@ def iniciar_sei(usuario: str, senha: str, log_callback=None):
 
     # 5. Ler planilha e processar cada pensionista
     log("Lendo planilha de dados...", "info")
-    df = pd.read_excel(PLANILHA_DADOS)
+    df = pd.read_excel(PLANILHA_DADOS, dtype={"pen_SEI": str})
     total = len(df)
     log(f"{total} pensionista(s) encontrada(s) na planilha", "info")
 
