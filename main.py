@@ -19,6 +19,7 @@ from integra.browser import SeleniumSetup
 from integra.sei import (
     LoginSei, TelaAviso, SelecaoUnidadeDireta,
     IniciaProcessos, NumeroProcesso, TrocaMarcadorSei,
+    ProcessoSei,
 )
 from integra.sei.core.enums import StatusLogin
 
@@ -67,61 +68,28 @@ def iniciar_sei(usuario: str, senha: str, log_callback=None):
 
     log("SEI iniciado com sucesso na unidade DEXTRA!", "success")
 
-    # 5. Ler planilha e processar cada pensionista
-    log("Lendo planilha de dados...", "info")
-    df = pd.read_excel(PLANILHA_DADOS, dtype={"pen_SEI": str})
-    total = len(df)
-    log(f"{total} pensionista(s) encontrada(s) na planilha", "info")
+    # 5. Acessar processo existente para teste do marcador
+    numero_teste = "19975.004848/2026-66"
+    log(f"Acessando processo {numero_teste}...", "info")
 
-    for idx, row in df.iterrows():
-        # Pula se já tem processo SEI registrado
-        if pd.notna(row.get("pen_SEI")) and str(row["pen_SEI"]).strip():
-            log(f"[{idx + 1}/{total}] {row['NOME_PENSIONISTA']} já possui processo: {row['pen_SEI']}", "info")
-            continue
+    acesso = ProcessoSei(driver, numero_teste, callback_log=log)
+    acesso.acessar_processo_especifico()
 
-        interessada = row["NOME_PENSIONISTA"]
-        log(f"[{idx + 1}/{total}] Criando processo para: {interessada}", "info")
+    # 6. Inserir marcador no processo
+    marcador = TrocaMarcadorSei(
+        navegador=driver,
+        mensagem="Processo criado via automação PSS",
+        inserir="INTEGRA-Processo Criado",
+        retornar_controle_processos=True,
+        callback_log=log,
+    )
 
-        # Criar processo
-        processo = IniciaProcessos(
-            navegador=driver,
-            especificacao="Cobrança retroativa PSS",
-            classificacao="RFB - 251 - COBRANÇA CRÉDITO TRIBUTÁRIO",
-            interessado=interessada,
-            tipo="Arrecadação: Cobrança",
-        )
+    if marcador.trocar_marcador():
+        log("Marcador 'INTEGRA-Processo Criado' inserido com sucesso!", "success")
+    else:
+        log("Falha ao inserir marcador no processo", "error")
 
-        if not processo.iniciar_processo():
-            log(f"Falha ao criar processo para {interessada}", "error")
-            continue
-
-        # Capturar número do processo gerado
-        numero = NumeroProcesso(driver, callback_log=log)
-        numero_processo = numero.obter_numero_processo()
-
-        if numero_processo:
-            # Gravar na planilha
-            df.at[idx, "pen_SEI"] = numero_processo
-            df.to_excel(PLANILHA_DADOS, index=False)
-            log(f"Processo {numero_processo} gravado para {interessada}", "success")
-        else:
-            log(f"Processo criado mas não foi possível capturar o número", "warning")
-
-        # Inserir marcador no processo
-        marcador = TrocaMarcadorSei(
-            navegador=driver,
-            mensagem="Processo criado via automação PSS",
-            inserir="INTEGRA-Processo Criado",
-            retornar_controle_processos=True,
-            callback_log=log,
-        )
-
-        if marcador.trocar_marcador():
-            log(f"Marcador 'INTEGRA-Processo Criado' inserido", "success")
-        else:
-            log(f"Falha ao inserir marcador no processo", "warning")
-
-    log(f"Processamento concluído! {total} registros verificados.", "success")
+    log("Teste concluído!", "success")
     return driver
 
 
