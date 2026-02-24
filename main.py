@@ -54,7 +54,7 @@ def iniciar_sei(usuario: str, senha: str, log_callback=None):
 
     # 4. Selecionar unidade DEXTRA
     selecao = SelecaoUnidadeDireta(driver, "MGI-SGP-DECIPEX-CGPAG-DEXTRA", callback_log=log)
-    selecao.selecionar_unidade()
+    selecao.selecionar_unidade_sei()
 
     log("SEI iniciado com sucesso na unidade DEXTRA!", "success")
     return driver
